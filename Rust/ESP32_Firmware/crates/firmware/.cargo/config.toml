@@ -1,0 +1,15 @@
+# 固件专属的编译配置：只在 crates/firmware 目录下执行 cargo 时生效。
+# 这样仓库根目录的 `cargo test -p light-core` 仍然按主机目标编译（纯逻辑单测）。
+include = ["esp-config.toml"]
+
+[target.riscv32imc-unknown-none-elf]
+# 必须带 --partition-table：双 OTA 槽布局在 partitions_ota.csv 里，
+# 与固件运行时的 otadata 切换逻辑配套（分区表偏移 0x8000 由 espflash 写入）。
+runner = "espflash flash --monitor --chip esp32c3 --partition-table ../../partitions_ota.csv"
+
+[build]
+rustflags = [
+  # 供 esp-backtrace 获取回溯信息
+  "-C", "force-frame-pointers",
+]
+target = "riscv32imc-unknown-none-elf"

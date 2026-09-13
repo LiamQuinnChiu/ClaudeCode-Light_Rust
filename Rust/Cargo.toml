@@ -1,0 +1,13 @@
+[workspace]
+resolver = "2"
+members = ["crates/daemon", "crates/pipe-client"]
+
+[profile.dev]
+# 调试构建也保持较小体积
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1
+debug = 2
+lto = 'fat'
+opt-level = 's'

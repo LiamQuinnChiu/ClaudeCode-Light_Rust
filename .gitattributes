@@ -1,2 +1,13 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.rs linguist-language=Rust
+*.bin linguist-generated=true
+target/** linguist-generated=true
+docs/**/*.html linguist-documentation
+**/Makefile linguist-generated=true
+*.elf linguist-generated=true
+*.hex linguist-generated=true
+*.d linguist-generated=true
+*.ld linguist-generated=true

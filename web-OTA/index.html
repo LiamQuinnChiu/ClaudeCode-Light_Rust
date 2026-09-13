@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CursorLight 固件更新</title>
+<style>
+  :root {
+    --bg: #12141a; --card: #1b1e26; --line: #2b3040; --fg: #e6e8ee; --dim: #9aa3b2;
+    --green: #4ade80; --yellow: #facc15; --red: #f87171; --blue: #60a5fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px; background: var(--bg); color: var(--fg);
+    font: 15px/1.6 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  main { max-width: 720px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--dim); font-size: 13px; margin-bottom: 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  button {
+    background: var(--blue); color: #0b1020; border: 0; border-radius: 8px;
+    padding: 9px 16px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { background: #3a4053; color: #8b93a5; cursor: not-allowed; }
+  button.ghost { background: transparent; color: var(--fg); border: 1px solid var(--line); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #555; display: inline-block; }
+  .dot.on { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .dot.warn { background: var(--yellow); }
+  .dot.err { background: var(--red); }
+  #bar { height: 10px; background: #2a2f3d; border-radius: 6px; overflow: hidden; margin: 10px 0 6px; }
+  #bar > i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--blue), var(--green)); transition: width .15s; }
+  #log {
+    margin: 0; padding: 10px; background: #0e1015; border: 1px solid var(--line);
+    border-radius: 8px; height: 180px; overflow: auto; font: 12px/1.5 ui-monospace, Consolas, monospace;
+    color: #b9c2d0; white-space: pre-wrap;
+  }
+  .meta { color: var(--dim); font-size: 13px; }
+  code { background: #0e1015; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  details summary { cursor: pointer; color: var(--dim); }
+  ol { padding-left: 20px; }
+  .warnbox { border-color: #4a3a1a; background: #241f14; color: #f0d9a8; font-size: 13px; }
+  input[type=file] { color: var(--dim); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>CursorLight 固件更新</h1>
+  <div class="sub">通过蓝牙（Web Bluetooth）无线更新 ESP32-C3 状态灯固件 · 需 Chrome / Edge</div>
+
+  <div class="card">
+    <div class="row">
+      <span class="dot" id="connDot"></span>
+      <span id="connText">未连接</span>
+      <span style="flex:1"></span>
+      <button id="btnConnect">连接设备</button>
+      <button id="btnDisconnect" class="ghost" disabled>断开</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <input type="file" id="file" accept=".bin" />
+      <button id="btnUpload" disabled>开始更新</button>
+      <button id="btnCancel" class="ghost" disabled>取消</button>
+    </div>
+    <div class="meta" id="fileInfo" style="margin-top:8px">选择编译产物 <code>cursorlight</code>（无扩展名的 .bin）</div>
+    <div id="bar"><i></i></div>
+    <div class="meta" id="progress">—</div>
+  </div>
+
+  <div class="card">
+    <div class="meta" style="margin-bottom:6px">日志</div>
+    <pre id="log"></pre>
+  </div>
+
+  <div class="card warnbox" id="unsupported" hidden>
+    当前浏览器不支持 Web Bluetooth（需要 Chrome 或 Edge，且页面运行在 https 或 localhost 下）。
+    请改用下方的 USB 方式更新。
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>USB 救砖 / 有线更新（任何情况下都能用）</summary>
+      <p class="meta">用数据线连接开发板，然后任选一种：</p>
+      <ol>
+        <li>
+          <b>espflash 命令行（推荐）</b>
+          <pre class="meta" style="background:#0e1015;padding:10px;border-radius:8px;overflow:auto">cd ESP32_Firmware/rust/crates/firmware
+cargo run --release</pre>
+          <span class="meta">等价于 <code>espflash flash --monitor --chip esp32c3 --partition-table partitions_ota.csv &lt;bin&gt;</code>。
+          注意必须带 <code>--partition-table</code>，否则双槽分区表的偏移与固件不一致。</span>
+        </li>
+        <li>
+          <b>浏览器直刷（esp-web-tools）</b>：把编译产物和 <code>manifest.json</code> 放到同一个静态目录里
+          （用 <code>python -m http.server 8000</code> 起服务即可，localhost 属于安全上下文），
+          然后用 Chrome 打开 esp-web-tools 的刷写页并选择该 manifest。
+          <pre class="meta" style="background:#0e1015;padding:10px;border-radius:8px;overflow:auto">{
+  "name": "CursorLight",
+  "version": "V.rs0.4.1",
+  "builds": [{
+    "chipFamily": "ESP32-C3",
+    "parts": [
+      { "path": "bootloader.bin", "offset": 0 },
+      { "path": "partitions.bin", "offset": 32768 },
+      { "path": "boot_app0.bin",   "offset": 57344 },
+      { "path": "cursorlight.bin", "offset": 65536 }
+    ]
+  }]
+}</pre>
+        </li>
+      </ol>
+      <p class="meta">无线更新失败（例如升级途中断电）不会变砖：固件只写"当前没在运行"的那个槽，
+      校验通过才切换启动分区，所以重启后仍然是旧固件，插线重刷即可。</p>
+    </details>
+  </div>
+</main>
+
+<script>
+"use strict";
+
+// ===== 协议常量（与固件 src/ble.rs 一致）=====
+const LIGHT_SERVICE = "b8b7e001-7a6b-4f4f-9a8b-11c0ffee0001"; // 用于判断"是不是旧固件"
+const OTA_SERVICE = "b8b7e0f0-7a6b-4f4f-9a8b-11c0ffee0001";
+const OTA_CTRL    = "b8b7e0f1-7a6b-4f4f-9a8b-11c0ffee0001";
+const OTA_DATA    = "b8b7e0f2-7a6b-4f4f-9a8b-11c0ffee0001";
+const OTA_STATUS  = "b8b7e0f3-7a6b-4f4f-9a8b-11c0ffee0001";
+
+const CHUNK = 244;              // BLE 4.2 DLE 下 ATT 写上限（MTU 247 - 3）
+const MAX_AHEAD = 64 * 1024;    // 未确认字节上限（流控窗口）
+const READY_TIMEOUT_MS = 8000;
+const COMMIT_TIMEOUT_MS = 30000;
+
+// ===== DOM =====
+const $ = (id) => document.getElementById(id);
+const el = {
+  connDot: $("connDot"), connText: $("connText"),
+  btnConnect: $("btnConnect"), btnDisconnect: $("btnDisconnect"),
+  file: $("file"), btnUpload: $("btnUpload"), btnCancel: $("btnCancel"),
+  fileInfo: $("fileInfo"), bar: $("bar").firstElementChild, progress: $("progress"),
+  log: $("log"), unsupported: $("unsupported"),
+};
+
+// ===== 状态 =====
+let device = null, gatt = null;
+let ctrlChar = null, dataChar = null, statusChar = null;
+let selectedFile = null;
+let acked = 0;                  // 固件已确认接收的字节数
+let statusWaiters = [];         // 等待特定状态文本的 promise
+let busy = false;
+
+// ===== 小工具 =====
+function log(msg) {
+  const t = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+  el.log.textContent += `[${t}] ${msg}\n`;
+  el.log.scrollTop = el.log.scrollHeight;
+}
+function setConn(state, text) {
+  el.connDot.className = "dot" + (state ? " " + state : "");
+  el.connText.textContent = text;
+}
+function fmt(n) {
+  return n >= 1024 * 1024 ? (n / 1024 / 1024).toFixed(2) + " MB" : (n / 1024).toFixed(1) + " KB";
+}
+function setProgress(done, total, label) {
+  const pct = total ? Math.min(100, (done / total) * 100) : 0;
+  el.bar.style.width = pct.toFixed(1) + "%";
+  el.progress.textContent = label || `${fmt(done)} / ${fmt(total)}（${pct.toFixed(1)}%）`;
+}
+async function sha256Hex(buf) {
+  const digest = await crypto.subtle.digest("SHA-256", buf);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// ===== 状态通知 =====
+function onStatus(text) {
+  log("← " + text);
+  const waiters = statusWaiters;
+  statusWaiters = [];
+  const failed = text.startsWith("error:") || text === "cancelled";
+  for (const w of waiters) {
+    if (failed) w.reject(new Error("固件返回 " + text));
+    else if (w.match(text)) w.resolve(text);
+    else statusWaiters.push(w);
+  }
+  const m = /^progress:(\d+):(\d+)$/.exec(text);
+  if (m) {
+    acked = parseInt(m[1], 10);
+    setProgress(acked, parseInt(m[2], 10));
+  } else if (text === "done") {
+    setProgress(1, 1, "传输完成，设备重启中…");
+  }
+}
+function waitStatus(match, timeoutMs, label) {
+  return new Promise((resolve, reject) => {
+    const w = { match, resolve, reject };
+    statusWaiters.push(w);
+    setTimeout(() => {
+      statusWaiters = statusWaiters.filter((x) => x !== w);
+      reject(new Error("等待 " + label + " 超时"));
+    }, timeoutMs);
+  });
+}
+function waitAcked(target, timeoutMs = 30000) {
+  return new Promise((resolve, reject) => {
+    const tick = () => {
+      if (acked >= target) return resolve();
+      if (!gatt || !gatt.connected) return reject(new Error("连接已断开"));
+      setTimeout(tick, 50);
+    };
+    setTimeout(() => reject(new Error("流控等待超时")), timeoutMs);
+    tick();
+  });
+}
+
+// ===== 连接 =====
+async function connect() {
+  if (!navigator.bluetooth) throw new Error("浏览器不支持 Web Bluetooth");
+  log("请求设备（名称为 CursorLight）…");
+  device = await navigator.bluetooth.requestDevice({
+    filters: [{ namePrefix: "CursorLight" }],
+    optionalServices: [OTA_SERVICE, LIGHT_SERVICE],
+  });
+  device.addEventListener("gattserverdisconnected", () => {
+    setConn("warn", "已断开");
+    el.btnUpload.disabled = true;
+    el.btnCancel.disabled = true;
+    log("设备已断开");
+    if (busy) log("提示：若正在升级，设备可能已经重启进入新固件。请重新连接后确认版本。");
+  });
+
+  log("连接 GATT…");
+  gatt = await device.gatt.connect();
+
+  // 服务发现：找不到 OTA 服务时，先判断是不是"板子上还是旧固件"
+  let svc;
+  try {
+    svc = await gatt.getPrimaryService(OTA_SERVICE);
+  } catch (e) {
+    let hasLight = false;
+    try { await gatt.getPrimaryService(LIGHT_SERVICE); hasLight = true; } catch (_) { /* 也没有 */ }
+    if (hasLight) {
+      log("检测到灯效服务，但没有 OTA 服务 → 板子上是旧版固件");
+      throw new Error(
+        "这个设备上没有 OTA 服务（只找到灯效服务，说明板子里还是旧版固件）。" +
+        "请先用 USB 按《首次刷机说明.md》的「步骤 A」线刷一次本固件包，之后再回来做无线升级。"
+      );
+    }
+    throw new Error(
+      "没找到 CursorLight 的任何服务。常见原因：Windows 蓝牙缓存过期" +
+      "（设置 → 蓝牙 → 删除该设备，或关开一次蓝牙适配器后重试），或设备未正常运行。" +
+      "原始错误：" + (e && e.message ? e.message : e)
+    );
+  }
+
+  ctrlChar = await svc.getCharacteristic(OTA_CTRL);
+  dataChar = await svc.getCharacteristic(OTA_DATA);
+  statusChar = await svc.getCharacteristic(OTA_STATUS);
+  await statusChar.startNotifications();
+  statusChar.addEventListener("characteristicvaluechanged", (ev) => {
+    onStatus(new TextDecoder().decode(ev.target.value).trim());
+  });
+
+  setConn("on", `已连接 ${device.name || "CursorLight"}`);
+  log("已连接，状态通知已开启");
+  el.btnUpload.disabled = !selectedFile;
+  el.btnDisconnect.disabled = false;
+  el.btnConnect.disabled = true;
+}
+
+function disconnect() {
+  try { if (gatt && gatt.connected) gatt.disconnect(); } catch (_) {}
+  setConn("", "未连接");
+  el.btnConnect.disabled = false;
+  el.btnDisconnect.disabled = true;
+  el.btnUpload.disabled = true;
+}
+
+// ===== 升级流程 =====
+async function upload() {
+  if (!selectedFile || !ctrlChar) return;
+  busy = true;
+  el.btnUpload.disabled = true;
+  el.btnCancel.disabled = false;
+  acked = 0;
+
+  try {
+    const buf = await selectedFile.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    log(`读取固件：${selectedFile.name}，${fmt(bytes.length)}`);
+    const sha = await sha256Hex(buf);
+    log("SHA-256: " + sha);
+
+    log(`→ start:${bytes.length}:${sha.slice(0, 12)}…`);
+    await ctrlChar.writeValueWithResponse(
+      new TextEncoder().encode(`start:${bytes.length}:${sha}`)
+    );
+    await waitStatus((t) => t.startsWith("ready"), READY_TIMEOUT_MS, "ready");
+    log("固件已进入接收状态，开始传输");
+
+    let sent = 0;
+    setProgress(0, bytes.length);
+    while (sent < bytes.length) {
+      if (sent - acked > MAX_AHEAD) {
+        await waitAcked(sent - MAX_AHEAD);
+      }
+      const end = Math.min(sent + CHUNK, bytes.length);
+      await dataChar.writeValueWithoutResponse(bytes.subarray(sent, end));
+      sent = end;
+      if (sent % (16 * 1024) < CHUNK) setProgress(sent, bytes.length);
+    }
+    setProgress(bytes.length, bytes.length, "传输完毕，校验中…");
+
+    log("→ commit");
+    await ctrlChar.writeValueWithResponse(new TextEncoder().encode("commit"));
+    await waitStatus((t) => t === "done" || t.startsWith("error"), COMMIT_TIMEOUT_MS, "done");
+    log("✓ 更新成功，设备正在重启进入新固件");
+    setProgress(1, 1, "更新成功");
+    alert("固件更新成功，设备正在重启。\n重启后请重新连接（灯会先播放一次开机演示）。");
+  } catch (e) {
+    log("✗ 失败：" + (e && e.message ? e.message : e));
+    // 尽力中止，避免固件一直等在接收状态
+    try { await ctrlChar.writeValueWithResponse(new TextEncoder().encode("cancel")); } catch (_) {}
+    setProgress(0, 0, "失败：" + (e && e.message ? e.message : e));
+  } finally {
+    busy = false;
+    el.btnUpload.disabled = false;
+    el.btnCancel.disabled = true;
+  }
+}
+
+// ===== 事件绑定 =====
+el.btnConnect.addEventListener("click", async () => {
+  el.btnConnect.disabled = true;
+  try {
+    await connect();
+  } catch (e) {
+    setConn("err", "连接失败");
+    log("连接失败：" + (e && e.message ? e.message : e));
+    el.btnConnect.disabled = false;
+  }
+});
+el.btnDisconnect.addEventListener("click", disconnect);
+el.file.addEventListener("change", async () => {
+  selectedFile = el.file.files && el.file.files[0] ? el.file.files[0] : null;
+  if (!selectedFile) { el.fileInfo.textContent = "未选择文件"; return; }
+  const sha = await sha256Hex(await selectedFile.arrayBuffer());
+  el.fileInfo.textContent = `${selectedFile.name} · ${fmt(selectedFile.size)} · SHA-256 ${sha.slice(0, 16)}…`;
+  el.btnUpload.disabled = !gatt || !gatt.connected;
+});
+el.btnUpload.addEventListener("click", upload);
+el.btnCancel.addEventListener("click", async () => {
+  try { await ctrlChar.writeValueWithResponse(new TextEncoder().encode("cancel")); log("已发送 cancel"); }
+  catch (e) { log("取消失败：" + e.message); }
+});
+
+// ===== 启动检查 =====
+if (!navigator.bluetooth) {
+  el.unsupported.hidden = false;
+  el.btnConnect.disabled = true;
+  setConn("err", "浏览器不支持");
+}
+log("页面就绪。请先连接设备，再选择 .bin 固件。");
+</script>
+</body>
+</html>

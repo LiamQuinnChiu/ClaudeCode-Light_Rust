@@ -1,0 +1,12 @@
+[workspace]
+resolver = "2"
+members = ["crates/light-core", "crates/firmware"]
+
+[profile.dev]
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1
+debug = 2
+lto = 'fat'
+opt-level = 's'

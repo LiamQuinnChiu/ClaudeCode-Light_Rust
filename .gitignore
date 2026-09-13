@@ -1,0 +1,37 @@
+# Rust 构建产物
+target/
+
+# 预编译产物：源码仓库不保留，由 cargo build / espflash save-image 生成
+bin/*.exe
+Firmware/*.bin
+
+# 下载的工具
+bin/espflash.exe
+bin/espflash.zip
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# 运行时临时文件
+*.pid
+*.log
+hook.bat
+state_desktop.json
+state_desktop.lock
+session_*.json
+primary_session.json
+desktop_dots_config.json
+
+# 编辑器 / IDE
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS 生成文件
+Thumbs.db
+Desktop.ini
+.DS_Store

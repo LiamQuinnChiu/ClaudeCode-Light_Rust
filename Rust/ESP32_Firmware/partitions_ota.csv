@@ -1,0 +1,11 @@
+# 双 OTA 槽分区表（4MB flash，ESP32-C3）
+# 滚动升级：写非当前槽 → 校验 → 提升 otadata seq → 重启
+#
+# 布局要点：分区表在 0x8000，nvs 0x9000..0xE000，otadata 0xE000..0x10000，
+# 应用槽必须从 0x10000 开始；单槽 0x1E0000(1.875MB)，当前固件约 328KB。
+# Name,     Type, SubType,  Offset,   Size,     Flags
+nvs,        data, nvs,      0x9000,   0x5000,
+otadata,    data, ota,      0xe000,   0x2000,
+ota_0,      app,  ota_0,    0x10000,  0x1E0000,
+ota_1,      app,  ota_1,    0x1F0000, 0x1E0000,
+coredump,   data, coredump, 0x3D0000, 0x10000,
