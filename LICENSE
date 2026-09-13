@@ -1,6 +1,7 @@
 MIT License
 
-Copyright (c) 2026 Liam Quinn
+Copyright (c) 2026 JasonLam08
+Copyright (c) 2026 LiamQuinnChiu (LiamQuinn)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +20,16 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## 项目贡献说明
+
+### 原作者 — JasonLam08
+- 项目：cursor_agent_status_light
+- 仓库：https://github.com/JasonLam08/cursor_agent_status_light
+- 贡献：提供了整套 ESP32 硬件 BLE 通信方案与基础灯效实现，为本项目（ClaudeCode-Status-Light）提供了核心底层参考。
+
+### 重构者 — LiamQuinn_Chiu (LiamQuinn)
+- 项目：ClaudeCode-Status-Light
+- 贡献：在 JasonLam08 原始硬件/固件基础上，完整重构了软件逻辑，将状态灯系统从 Cursor IDE 拓展适配至 Claude Code，实现了增量状态机制、BLE 持久连接守护进程、Windows 桌面悬浮窗、多 Agent 互锁机制等功能。
