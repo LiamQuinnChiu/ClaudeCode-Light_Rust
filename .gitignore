@@ -1,14 +1,6 @@
 # Rust 构建产物
 target/
 
-# 预编译产物：源码仓库不保留，由 cargo build / espflash save-image 生成
-bin/*.exe
-Firmware/*.bin
-
-# 下载的工具
-bin/espflash.exe
-bin/espflash.zip
-
 # Python
 __pycache__/
 *.py[cod]
